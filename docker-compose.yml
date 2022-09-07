@@ -7,15 +7,21 @@ services:
       - "5432:5432"
     environment:
       POSTGRES_PASSWORD: postgrespassword
+      POSTGRES_DB: myapp_development
     volumes:
       - "postgres:/var/lib/postgresql/data"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
   graphql-engine:
     image: hasura/graphql-engine:v2.0.10
     ports:
       - "8080:8080"
     depends_on:
-      - "postgres"
-      - "backend"
+      postgres:
+        condition: service_healthy
     restart: always
     environment:
       HASURA_GRAPHQL_DATABASE_URL: postgres://postgres:postgrespassword@postgres:5432/myapp_development
@@ -41,8 +47,12 @@ services:
       - "redis:/data"
   backend:
     depends_on:
-      - "postgres"
-      - "redis"
+      postgres:
+        condition: service_healthy
+      graphql-engine:
+        condition: service_started
+      redis:
+        condition: service_started
     build:
       context: .
       dockerfile: Dockerfile.development
