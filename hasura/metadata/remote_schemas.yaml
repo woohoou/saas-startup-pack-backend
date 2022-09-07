@@ -1,0 +1,63 @@
+- name: Backend
+  definition:
+    url_from_env: BACKEND_REMOTE_SCHEMA
+    timeout_seconds: 60
+    headers:
+      - name: X-Hasura-Service-Key
+        value_from_env: HASURA_SERVICE_KEY
+    forward_client_headers: true
+  permissions:
+    - role: user
+      definition:
+        schema: |
+          type Attachment {
+          	blob: Blob!
+          	createdAt: ISO8601DateTime!
+          	id: String!
+          	thumbnailUrl: String!
+          	url: String!
+          }
+          input AttachmentsAttributes {
+          	attribute: String!
+          	recordId: bigint!
+          	recordType: String!
+          }
+          type Blob {
+          	byteSize: bigint!
+          	checksum: String!
+          	contentType: String!
+          	createdAt: ISO8601DateTime!
+          	filename: String!
+          	id: String!
+          	key: String!
+          }
+          input CreateAttachmentInput {
+          	attribute: String!
+          	clientMutationId: String
+          	relatedId: Int!
+          	relatedType: String!
+          	signedId: String!
+          }
+          type CreateAttachmentOutput {
+          	attachment: Attachment!
+          }
+          input CreateAttachmentsInput {
+          	attribute: String!
+          	clientMutationId: String
+          	relatedId: Int!
+          	relatedType: String!
+          	signedIds: [String!]!
+          }
+          type CreateAttachmentsOutput {
+          	attachments: [Attachment!]!
+          }
+          scalar ISO8601DateTime
+          type Mutation {
+          	createAttachment(input: CreateAttachmentInput!): CreateAttachmentOutput
+          	createAttachments(input: CreateAttachmentsInput!): CreateAttachmentsOutput
+          }
+          type Query {
+          	attachment(input: AttachmentsAttributes!): Attachment
+          	attachments(input: AttachmentsAttributes!): [Attachment!]!
+          }
+          scalar bigint

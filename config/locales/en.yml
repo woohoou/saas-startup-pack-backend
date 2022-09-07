@@ -1,0 +1,5 @@
+en:
+  notifications:
+    send_sms_otp: "Your verification code is: %{code}"
+    send_sms_otp_with_hash: "Your verification code is: %{code}\n\n\n\n%{validation_hash}"
+    send_whatsapp_otp: "Your verification code is: %{code}"

@@ -1,0 +1,82 @@
+version: "3.7"
+services:
+  myapp-postgres:
+    image: postgres:12
+    ports:
+      - "5433:5432"
+    environment:
+      POSTGRES_PASSWORD: postgrespassword
+    volumes:
+      - "postgres:/var/lib/postgresql/data"
+    networks:
+      - nginx_default
+  myapp-graphql-engine:
+    image: hasura/graphql-engine:v2.0.10
+    depends_on:
+      - "backend"
+    environment:
+      HASURA_GRAPHQL_DATABASE_URL: postgres://postgres:postgrespassword@myapp-postgres:5432/myapp_production
+      ## enable the console served by server
+      HASURA_GRAPHQL_ENABLE_CONSOLE: "true" # set to "false" to disable console
+      ## enable debugging mode. It is recommended to disable this in production
+      HASURA_GRAPHQL_ENABLED_LOG_TYPES: startup, http-log, webhook-log, websocket-log, query-log
+      HASURA_GRAPHQL_ADMIN_SECRET: hasura
+      ACTION_BASE_URL: http://myapp-backend:8081/api/hasura/actions
+      EVENT_BASE_URL: http://myapp-backend:8081/api/hasura/events
+      BACKEND_REMOTE_SCHEMA: http://myapp-backend:8081/graphql
+      HASURA_GRAPHQL_ENABLE_REMOTE_SCHEMA_PERMISSIONS: "true"
+      HASURA_SERVICE_KEY: hasura_service_key
+    networks:
+      - nginx_default
+  myapp-redis:
+    image: redis:6.0-alpine
+    volumes:
+      - "redis:/data"
+    networks:
+      - nginx_default
+  myapp-backend:
+    image: "${DOCKER_SWARM_PRODUCTION}:5000/myapp-backend"
+    depends_on:
+      - "postgres"
+      - "redis"
+    command: bash -c "rm -rf tmp/pids/server.pid && bundle exec rails s -b 0.0.0.0 -p 3000"
+    volumes:
+      - "bundle_cache:/bundle"
+    environment:
+      REDIS_URL: redis://myapp-redis:6379/0
+      DATABASE_URL: postgres://postgres:postgrespassword@myapp-postgres:5432
+      DISABLE_SPRING: 1
+      HASURA_ENDPOINT: http://myapp-graphql-engine:8080/v1/graphql
+      HASURA_SERVICE_KEY: hasura_service_key
+      HASURA_GRAPHQL_ADMIN_SECRET: hasura
+    networks:
+      - nginx_default
+  myapp-worker:
+    image: "${DOCKER_SWARM_PRODUCTION}:5000/myapp-backend"
+    depends_on:
+      - "postgres"
+      - "redis"
+      - "backend"
+    command: bundle exec sidekiq -C config/sidekiq.yml
+    expose: []
+    entrypoint: ""
+    volumes:
+      - "bundle_cache:/bundle"
+    environment:
+      REDIS_URL: redis://myapp-redis:6379/0
+      DATABASE_URL: postgres://postgres:postgrespassword@myapp-postgres:5432
+      DISABLE_SPRING: 1
+      HASURA_ENDPOINT: http://myapp-graphql-engine:8080/v1/graphql
+      HASURA_SERVICE_KEY: hasura_service_key
+      HASURA_GRAPHQL_ADMIN_SECRET: hasura
+    networks:
+      - nginx_default
+
+volumes:
+  redis:
+  postgres:
+  bundle_cache:
+
+networks:
+  nginx_default:
+    external: true
