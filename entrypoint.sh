@@ -5,5 +5,6 @@ bundle exec rails db:migrate
 bundle exec rails db:seed
 
 rm -rf public/packs
+yarn
 
 exec "$@"

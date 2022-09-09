@@ -50,8 +50,6 @@ RUN gem install bundler -v 2.2.18
 COPY Gemfile Gemfile.lock ./
 RUN bundle install
 
-RUN yarn
-
 ENTRYPOINT ["./entrypoint.sh"]
 
 EXPOSE 3000
