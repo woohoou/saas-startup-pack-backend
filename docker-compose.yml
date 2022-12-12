@@ -2,7 +2,7 @@ version: "3.7"
 services:
   postgres:
     image: postgres:12
-    restart: always
+    restart: on-failure
     ports:
       - "5432:5432"
     environment:
@@ -22,7 +22,7 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
-    restart: always
+    restart: on-failure
     environment:
       HASURA_GRAPHQL_DATABASE_URL: postgres://postgres:postgrespassword@postgres:5432/myapp_development
       ## enable the console served by server
